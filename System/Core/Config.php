@@ -8,33 +8,34 @@ class Config
     /**
      * Load config file once
      */
-    public static function load(string $key): void
+    protected static function loadFile(string $name): void
     {
-        if (!isset(self::$items[$key])) {
-            $file = __DIR__ . "/../../config/{$key}.php";
-            if (file_exists($file)) {
-                self::$items[$key] = require $file;
-            } else {
-                throw new \Exception("Config file {$key}.php not found.");
+        if (!isset(self::$items[$name])) {
+            $file = __DIR__ . "/../../config/{$name}.php";
+
+            if (!file_exists($file)) {
+                throw new \Exception("File not found");
             }
+
+            self::$items[$name] = require $file;
         }
     }
 
     /**
-     * Get a config value using dot notation
+     * Get config value (dot notation)
      */
     public static function get(string $key, $default = null)
     {
-        $parts = explode('.', $key);
-        $first = array_shift($parts);
+        $segments = explode('.', $key);
+        $name = array_shift($segments);
 
-        self::load($first);
+        self::loadFile($name);
 
-        $value = self::$items[$first] ?? $default;
+        $value = self::$items[$name] ?? $default;
 
-        foreach ($parts as $part) {
-            if (is_array($value) && isset($value[$part])) {
-                $value = $value[$part];
+        foreach ($segments as $segment) {
+            if (is_array($value) && array_key_exists($segment, $value)) {
+                $value = $value[$segment];
             } else {
                 return $default;
             }

@@ -1,5 +1,5 @@
 {
-    "name": "colab/framework-v3",
+    "name": "vertexium/framework-v3",
     "description": "Lightweight Framework",
     "type": "project",
     "require": {

@@ -1,58 +1,58 @@
 <?php
+
 namespace System\Database\Migration;
 
 use PDO;
 
 /**
- * Base Migration class.
- * Extend this in your migration files.
+ * Class Migration
  *
- * Example:
- * class CreateUsersTable extends Migration
- * {
- *     public function up(): void
- *     {
- *         $this->createTable('users', function(Blueprint $table) {
- *             $table->id('user_id');
- *             $table->string('email', 150)->unique();
- *             $table->string('password', 255);
- *             $table->enum('status', ['0','1'])->default('1');
- *             $table->timestamps();
- *         });
- *     }
+ * Base abstract migration class providing database connection handling,
+ * schema helpers, and execution utilities. Every migration must implement
+ * the `up()` and `down()` methods to define changes made to the database.
  *
- *     public function down(): void
- *     {
- *         $this->dropTable('users');
- *     }
- * }
+ * @package System\Database\Migration
  */
 abstract class Migration
 {
+    /**
+     * The PDO database connection used by migrations.
+     *
+     * @var PDO
+     */
     protected PDO $pdo;
 
     /**
-     * Accept a PDO instance (or any object that implements PDO interface).
+     * Migration constructor.
+     *
+     * Initializes the PDO connection and attaches it to the Schema builder.
      */
-    public function __construct(PDO $pdo)
+    public function __construct()
     {
-        $this->pdo = $pdo;
-        // Pass PDO to Schema so static helpers work inside migration
+        $this->pdo = self::getPDO();
         Schema::setConnection($this->pdo);
     }
 
     /**
-     * Run the migration.
+     * Apply the migration changes (create tables, add columns, etc.).
+     *
+     * @return void
      */
     abstract public function up(): void;
 
     /**
-     * Reverse the migration.
+     * Reverse the migration changes (drop tables, remove columns, etc.).
+     *
+     * @return void
      */
     abstract public function down(): void;
 
     /**
-     * Convenience wrapper for Schema::create
+     * Create a database table using a schema callback.
+     *
+     * @param string   $name     The table name.
+     * @param callable $callback A callback receiving a Blueprint instance.
+     * @return void
      */
     protected function createTable(string $name, callable $callback): void
     {
@@ -60,7 +60,10 @@ abstract class Migration
     }
 
     /**
-     * Convenience wrapper for Schema::drop
+     * Drop a database table.
+     *
+     * @param string $name The name of the table to drop.
+     * @return void
      */
     protected function dropTable(string $name): void
     {
@@ -68,11 +71,40 @@ abstract class Migration
     }
 
     /**
-     * Execute raw SQL using the PDO instance.
-     * Returns number of affected rows or false on failure.
+     * Execute a raw SQL statement through PDO.
+     *
+     * @param string $sql The SQL string to execute.
+     * @return int|false The number of affected rows, or false on failure.
      */
     protected function execute(string $sql)
     {
         return $this->pdo->exec($sql);
+    }
+
+    /**
+     * Load database configuration and return a PDO instance.
+     *
+     * @return PDO
+     *
+     * @throws \RuntimeException If configuration is missing or invalid.
+     */
+    private static function getPDO(): PDO
+    {
+        $config = include __DIR__ . '/../../../config/app.php';
+
+        $db = $config['connections']['mysql'];
+
+        $dsn = sprintf(
+            "mysql:host=%s;port=%d;dbname=%s;charset=%s",
+            $db['host'],
+            $db['port'],
+            $db['database'],
+            $db['charset']
+        );
+
+        return new PDO($dsn, $db['username'], $db['password'], [
+            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]);
     }
 }

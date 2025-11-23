@@ -10,12 +10,7 @@ class Makers
     public static function makeController(string $name): void
     {
         $path = "App/Controllers/{$name}.php";
-
-        // Ensure directory exists
-        $dir = dirname($path);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
-        }
+        if (!is_dir(dirname($path))) mkdir(dirname($path), 0777, true);
 
         $template = <<<PHP
 <?php
@@ -44,12 +39,7 @@ PHP;
     public static function makeModel(string $name): void
     {
         $path = "App/Models/{$name}.php";
-
-        // Ensure directory exists
-        $dir = dirname($path);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
-        }
+        if (!is_dir(dirname($path))) mkdir(dirname($path), 0777, true);
 
         $template = <<<PHP
 <?php
@@ -76,12 +66,7 @@ PHP;
     {
         $time = date('Y_m_d_His');
         $file = "app/database/migrations/{$time}_{$name}.php";
-
-        // Ensure the directory exists
-        $dir = dirname($file);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0777, true);
-        }
+        if (!is_dir(dirname($file))) mkdir(dirname($file), 0777, true);
 
         $template = <<<PHP
 <?php
@@ -92,12 +77,12 @@ return new class extends Migration
 {
     public function up()
     {
-        // TODO: migration logic
+        // TODO: add migration logic here
     }
 
     public function down()
     {
-        // TODO: rollback logic
+        // TODO: add rollback logic here
     }
 };
 

@@ -1,55 +1,8 @@
 <?php
-include __DIR__ . '/System/CLI/Makers.php';
 
-use System\CLI\Makers;
+require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/System/CLI/Command.php';
 
-// Remove the first argument (cli file name)
 array_shift($argv);
 
-$command = $argv[0] ?? null;
-$name = $argv[1] ?? null;
-
-if (!$command) {
-    echo "Usage:\n";
-    echo "php cli make:controller ControllerName\n";
-    echo "php cli make:model ModelName\n";
-    echo "php cli make:migration MigrationName\n";
-    exit;
-}
-
-// Parse the command
-switch ($command) {
-    case 'make:controller':
-        if (!$name) {
-            echo "Please provide Controller Name: ";
-            $name = trim(fgets(STDIN));
-        }
-        Makers::makeController($name);
-        break;
-
-    case 'make:model':
-        if (!$name) {
-            echo "Please provide Model Name: ";
-            $name = trim(fgets(STDIN));
-        }
-        Makers::makeModel($name);
-        break;
-
-    case 'make:migration':
-        if (!$name) {
-            echo "Please provide Migration Name: ";
-            $name = trim(fgets(STDIN));
-        }
-        Makers::makeMigration($name);
-        break;
-
-    default:
-        echo "Invalid command!\n";
-        echo "Usage:\n";
-        echo "php cli make:controller ControllerName\n";
-        echo "php cli make:model ModelName\n";
-        echo "php cli make:migration MigrationName\n";
-        break;
-}
-
-echo "\nDone!\n";
+System\CLI\Command::handle($argv);

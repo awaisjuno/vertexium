@@ -34,6 +34,13 @@ class Blueprint
     protected ?string $primaryKey = null;
 
     /**
+     * Stores the latest column name to support chainable modifiers.
+     *
+     * @var string|null
+     */
+    protected ?string $lastColumn = null;
+
+    /**
      * Blueprint constructor.
      *
      * @param string $table The name of the table being defined.
@@ -41,6 +48,14 @@ class Blueprint
     public function __construct(string $table)
     {
         $this->table = $table;
+    }
+
+    /**
+     * Track the last added column
+     */
+    protected function setLastColumn(string $name)
+    {
+        $this->lastColumn = $name;
     }
 
     /**
@@ -53,6 +68,7 @@ class Blueprint
     {
         $this->columns[] = "`$name` INT UNSIGNED AUTO_INCREMENT";
         $this->primaryKey = $name;
+        $this->setLastColumn($name);
         return $this;
     }
 
@@ -65,6 +81,7 @@ class Blueprint
     public function integer(string $name)
     {
         $this->columns[] = "`$name` INT";
+        $this->setLastColumn($name);
         return $this;
     }
 
@@ -77,6 +94,7 @@ class Blueprint
     public function bigInteger(string $name)
     {
         $this->columns[] = "`$name` BIGINT";
+        $this->setLastColumn($name);
         return $this;
     }
 
@@ -90,6 +108,7 @@ class Blueprint
     public function string(string $name, int $length = 255)
     {
         $this->columns[] = "`$name` VARCHAR($length)";
+        $this->setLastColumn($name);
         return $this;
     }
 
@@ -102,6 +121,7 @@ class Blueprint
     public function text(string $name)
     {
         $this->columns[] = "`$name` TEXT";
+        $this->setLastColumn($name);
         return $this;
     }
 
@@ -114,6 +134,7 @@ class Blueprint
     public function boolean(string $name)
     {
         $this->columns[] = "`$name` TINYINT(1)";
+        $this->setLastColumn($name);
         return $this;
     }
 
@@ -128,6 +149,24 @@ class Blueprint
     {
         $this->columns[] = "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
         $this->columns[] = "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP";
+        return $this;
+    }
+
+    /**
+     * Add a UNIQUE constraint to the last column or the given column.
+     *
+     * @param string|null $column
+     * @return $this
+     */
+    public function unique(string $column = null)
+    {
+        $column = $column ?: $this->lastColumn;
+
+        if (!$column) {
+            throw new \Exception("unique() must be called after a column definition or with a column name.");
+        }
+
+        $this->columns[] = "UNIQUE (`$column`)";
         return $this;
     }
 

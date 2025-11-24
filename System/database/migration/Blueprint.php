@@ -5,45 +5,45 @@ namespace System\Database\Migration;
 /**
  * Class Blueprint
  *
- * Represents a table schema definition used for building SQL CREATE TABLE statements.
- * Allows the addition of various column types, primary keys, and timestamp fields.
+ * Represents a table schema and allows defining columns using a fluent API.
+ * Blueprint is responsible for building column definitions for CREATE TABLE.
  *
  * @package System\Database\Migration
  */
 class Blueprint
 {
     /**
-     * The name of the database table being created.
+     * Name of the table being created.
      *
      * @var string
      */
     protected string $table;
 
     /**
-     * List of column definitions accumulated during the schema build.
+     * List of generated column definitions.
      *
      * @var array<int, string>
      */
     protected array $columns = [];
 
     /**
-     * The name of the primary key column for the table.
-     *
-     * @var string|null
-     */
-    protected ?string $primaryKey = null;
-
-    /**
-     * Stores the latest column name to support chainable modifiers.
+     * Holds the last added column name to support chainable modifiers.
      *
      * @var string|null
      */
     protected ?string $lastColumn = null;
 
     /**
+     * Table primary key.
+     *
+     * @var string|null
+     */
+    protected ?string $primaryKey = null;
+
+    /**
      * Blueprint constructor.
      *
-     * @param string $table The name of the table being defined.
+     * @param string $table Table name being created.
      */
     public function __construct(string $table)
     {
@@ -51,152 +51,252 @@ class Blueprint
     }
 
     /**
-     * Track the last added column
+     * Internal helper: store the last created column name.
+     *
+     * @param string $name
+     * @return void
      */
-    protected function setLastColumn(string $name)
+    protected function setLastColumn(string $name): void
     {
         $this->lastColumn = $name;
     }
 
     /**
-     * Add an auto-incrementing UNSIGNED INT primary key column.
+     * Add an auto-incrementing primary key (INT UNSIGNED).
      *
-     * @param string $name Column name.
+     * @param string $name
      * @return $this
      */
-    public function increments(string $name)
+    public function increments(string $name): self
     {
         $this->columns[] = "`$name` INT UNSIGNED AUTO_INCREMENT";
         $this->primaryKey = $name;
         $this->setLastColumn($name);
+
         return $this;
     }
 
     /**
-     * Add an INT column.
+     * Add a standard INT column.
      *
-     * @param string $name Column name.
+     * @param string $name
      * @return $this
      */
-    public function integer(string $name)
+    public function integer(string $name): self
     {
         $this->columns[] = "`$name` INT";
         $this->setLastColumn($name);
+
         return $this;
     }
 
     /**
      * Add a BIGINT column.
      *
-     * @param string $name Column name.
+     * @param string $name
      * @return $this
      */
-    public function bigInteger(string $name)
+    public function bigInteger(string $name): self
     {
         $this->columns[] = "`$name` BIGINT";
         $this->setLastColumn($name);
+
+        return $this;
+    }
+
+    /**
+     * Add a TINYINT(1) column (usually used for boolean).
+     *
+     * @param string $name
+     * @return $this
+     */
+    public function tinyInteger(string $name): self
+    {
+        $this->columns[] = "`$name` TINYINT(1)";
+        $this->setLastColumn($name);
+
         return $this;
     }
 
     /**
      * Add a VARCHAR column.
      *
-     * @param string $name Column name.
-     * @param int    $length Maximum length of the string.
+     * @param string $name
+     * @param int $length
      * @return $this
      */
-    public function string(string $name, int $length = 255)
+    public function string(string $name, int $length = 255): self
     {
         $this->columns[] = "`$name` VARCHAR($length)";
         $this->setLastColumn($name);
+
         return $this;
     }
 
     /**
      * Add a TEXT column.
      *
-     * @param string $name Column name.
+     * @param string $name
      * @return $this
      */
-    public function text(string $name)
+    public function text(string $name): self
     {
         $this->columns[] = "`$name` TEXT";
         $this->setLastColumn($name);
+
         return $this;
     }
 
     /**
-     * Add a BOOLEAN/TINYINT(1) column.
+     * Add a boolean column.
      *
-     * @param string $name Column name.
+     * @param string $name
      * @return $this
      */
-    public function boolean(string $name)
+    public function boolean(string $name): self
     {
         $this->columns[] = "`$name` TINYINT(1)";
         $this->setLastColumn($name);
+
         return $this;
     }
 
     /**
-     * Add Laravel-style timestamp fields:
-     * - created_at
-     * - updated_at
+     * Add a DATE column.
+     *
+     * @param string $name
+     * @return $this
+     */
+    public function date(string $name): self
+    {
+        $this->columns[] = "`$name` DATE";
+        $this->setLastColumn($name);
+
+        return $this;
+    }
+
+    /**
+     * Add a TIME column.
+     *
+     * @param string $name
+     * @return $this
+     */
+    public function time(string $name): self
+    {
+        $this->columns[] = "`$name` TIME";
+        $this->setLastColumn($name);
+
+        return $this;
+    }
+
+    /**
+     * Add created_at and updated_at timestamps.
      *
      * @return $this
      */
-    public function timestamps()
+    public function timestamps(): self
     {
-        $this->columns[] = "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
-        $this->columns[] = "updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP";
+        $this->columns[] = "`created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP";
+        $this->columns[] = "`updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP";
+
         return $this;
     }
 
     /**
-     * Add a UNIQUE constraint to the last column or the given column.
+     * Apply DEFAULT value to the last added column.
+     *
+     * @param mixed $value
+     * @return $this
+     */
+    public function default(mixed $value): self
+    {
+        if ($this->lastColumn === null) {
+            return $this;
+        }
+
+        $formatted = is_string($value) ? "'$value'" : $value;
+
+        $this->appendToLastColumn("DEFAULT $formatted");
+
+        return $this;
+    }
+
+    /**
+     * Mark the last added column as nullable.
+     *
+     * @return $this
+     */
+    public function nullable(): self
+    {
+        if ($this->lastColumn !== null) {
+            $this->appendToLastColumn("NULL");
+        }
+
+        return $this;
+    }
+
+    /**
+     * Append additional SQL to the last column definition.
+     *
+     * @param string $sql
+     * @return void
+     */
+    protected function appendToLastColumn(string $sql): void
+    {
+        foreach ($this->columns as $index => $column) {
+            if (str_contains($column, "`{$this->lastColumn}`")) {
+                $this->columns[$index] .= " $sql";
+                break;
+            }
+        }
+    }
+
+    /**
+     * Add a UNIQUE constraint.
      *
      * @param string|null $column
      * @return $this
      */
-    public function unique(string $column = null)
+    public function unique(string $column = null): self
     {
-        $column = $column ?: $this->lastColumn;
+        $column = $column ?? $this->lastColumn;
 
-        if (!$column) {
-            throw new \Exception("unique() must be called after a column definition or with a column name.");
+        if ($column !== null) {
+            $this->columns[] = "UNIQUE (`$column`)";
         }
 
-        $this->columns[] = "UNIQUE (`$column`)";
         return $this;
     }
 
     /**
-     * Define the primary key for the table.
+     * Set a column as the primary key.
      *
-     * @param string $name Primary key column name.
+     * @param string $name
      * @return $this
      */
-    public function primary(string $name)
+    public function primary(string $name): self
     {
         $this->primaryKey = $name;
+
         return $this;
     }
 
     /**
-     * Generate the final SQL CREATE TABLE statement.
+     * Generate the full CREATE TABLE SQL query.
      *
-     * @return string SQL query for table creation.
+     * @return string
      */
     public function toSql(): string
     {
         $sql = "CREATE TABLE IF NOT EXISTS `{$this->table}` (";
-        $sql .= implode(", ", $this->columns);
+        $sql .= implode(', ', $this->columns);
 
         if ($this->primaryKey !== null) {
             $sql .= ", PRIMARY KEY (`{$this->primaryKey}`)";
         }
 
         $sql .= ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+
         return $sql;
     }
 }
